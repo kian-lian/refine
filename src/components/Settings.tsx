@@ -1,5 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, type MouseEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { GripVertical } from "lucide-react";
+import { shouldStartWindowDrag } from "../lib/window-drag";
 
 interface Config {
   api_key: string;
@@ -9,6 +12,7 @@ interface Config {
 }
 
 export function Settings({ onClose }: { onClose: () => void }) {
+  const appWindow = getCurrentWindow();
   const [config, setConfig] = useState<Config>({
     api_key: "",
     api_url: "https://api.openai.com/v1/chat/completions",
@@ -42,6 +46,21 @@ export function Settings({ onClose }: { onClose: () => void }) {
     "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-[13px] outline-none focus:border-violet-400/50 placeholder-white/25 transition-colors";
   const labelClass = "block text-white/50 text-[12px] mb-1.5";
 
+  const handleTitleMouseDown = useCallback(
+    async (event: MouseEvent<HTMLElement>) => {
+      if (event.button !== 0 || !shouldStartWindowDrag(event.target)) {
+        return;
+      }
+
+      try {
+        await appWindow.startDragging();
+      } catch (e) {
+        console.error("启动设置窗口拖拽失败:", e);
+      }
+    },
+    [appWindow],
+  );
+
   return (
     <div
       className="w-full rounded-2xl overflow-hidden"
@@ -55,9 +74,20 @@ export function Settings({ onClose }: { onClose: () => void }) {
       }}
     >
       {/* 标题栏 */}
-      <div className="flex items-center justify-between px-5 pt-4 pb-3">
-        <span className="text-white/70 text-[14px] font-medium">设置</span>
+      <div
+        onMouseDown={handleTitleMouseDown}
+        role="presentation"
+        className="flex cursor-grab items-center justify-between px-5 pt-4 pb-3 active:cursor-grabbing"
+      >
+        <div
+          data-window-drag-handle="true"
+          className="flex items-center gap-2 text-white/70"
+        >
+          <GripVertical size={14} className="text-white/20" />
+          <span className="text-[14px] font-medium">设置</span>
+        </div>
         <button
+          data-no-window-drag="true"
           onClick={onClose}
           className="text-white/30 hover:text-white/60 transition-colors"
         >

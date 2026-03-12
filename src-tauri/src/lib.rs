@@ -1,4 +1,6 @@
-#[macro_use]
+// cocoa crate 已标记废弃，推荐迁移到 objc2 系列，但目前 API 仍可正常使用
+#![allow(deprecated)]
+
 extern crate objc;
 
 use std::process::Command;

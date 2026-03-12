@@ -1,4 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  type MouseEvent,
+} from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { register, unregister } from "@tauri-apps/plugin-global-shortcut";
 import {
@@ -6,8 +12,10 @@ import {
   LogicalSize,
   LogicalPosition,
 } from "@tauri-apps/api/window";
+import { GripVertical } from "lucide-react";
 import "./App.css";
 import { Settings } from "./components/Settings";
+import { shouldStartWindowDrag } from "./lib/window-drag";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -155,6 +163,21 @@ function App() {
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
+  const handleWindowMouseDown = useCallback(
+    async (event: MouseEvent<HTMLElement>) => {
+      if (event.button !== 0 || !shouldStartWindowDrag(event.target)) {
+        return;
+      }
+
+      try {
+        await appWindow.startDragging();
+      } catch (e) {
+        console.error("启动窗口拖拽失败:", e);
+      }
+    },
+    [appWindow],
+  );
+
   if (showSettings) {
     return (
       <Settings
@@ -169,6 +192,8 @@ function App() {
   return (
     <div className="w-full h-full" style={{ background: "transparent" }}>
       <div
+        onMouseDown={handleWindowMouseDown}
+        role="presentation"
         className="mx-auto rounded-2xl overflow-hidden"
         style={{
           background: "rgba(30, 30, 30, 0.95)",
@@ -218,6 +243,16 @@ function App() {
             {status === "loading" && (
               <div className="w-4 h-4 border-2 border-violet-400/30 border-t-violet-400 rounded-full animate-spin" />
             )}
+            <button
+              type="button"
+              data-window-drag-handle="true"
+              onMouseDown={handleWindowMouseDown}
+              aria-label="拖拽窗口"
+              className="flex h-8 w-8 cursor-grab items-center justify-center rounded-lg text-white/20 transition-colors hover:bg-white/5 hover:text-white/55 active:cursor-grabbing"
+              title="拖拽窗口"
+            >
+              <GripVertical size={14} />
+            </button>
             <button
               onClick={() => {
                 setShowSettings(true);
